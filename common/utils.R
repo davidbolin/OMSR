@@ -1,0 +1,36 @@
+## ---------------------------------------------------------------------
+## utils.R -- small utilities shared across the two applications and the
+## simulation study.  Sourced (as "../common/utils.R") from each project
+## directory; standardize.R also pulls it in.
+## ---------------------------------------------------------------------
+
+## Gaussian-kernel smoother.  Smooth values `y` observed at the rows of
+## `x` onto the query points `q` with bandwidth `h` (row-normalised
+## Gaussian weights, so a constant field is reproduced exactly).  `x` and
+## `q` are coordinate matrices with matching columns.
+gaussian_kernel_smooth <- function(x, y, q, h) {
+  D2 <- outer(rowSums(q^2), rowSums(x^2), `+`) - 2 * tcrossprod(q, x)
+  W  <- exp(-D2 / (2 * h^2))
+  rs <- rowSums(W)
+  rs[rs == 0] <- 1
+  as.numeric((W %*% y) / rs)
+}
+
+## Channel-separation index vartheta(X) in [0,1) of Theorem thm:geometry,
+## computed from the mass-lumped FEM matrices: the operator
+## K = kappa^2 C + G and the lumped mass diagonal Cd = diag(C).
+##   vartheta = 1 - (x'K x)^2 / [ (x'C x) (K x)'C^{-1}(K x) ].
+## Near 0 the pointwise and forcing channels are nearly collinear (the
+## hybrid is ill-conditioned); near 1 they are well separated.  `x` is
+## L2(D)-centred first (the constant component is absorbed by the
+## intercept -- it is the Neumann eigenfunction of L) unless the caller
+## has already centred it and passes center = FALSE.
+channel_separation_index <- function(K, Cd, x, center = TRUE) {
+  x <- as.numeric(x)
+  if (center) x <- x - sum(Cd * x) / sum(Cd)   # remove constant component
+  Kx  <- as.numeric(K %*% x)
+  q11 <- sum(Kx * Kx / Cd)     # (K x)' C^{-1} (K x), lumped C
+  q12 <- sum(x * Kx)           # x' K x
+  q22 <- sum(Cd * x * x)       # x' C x
+  1 - q12^2 / (q11 * q22)
+}
