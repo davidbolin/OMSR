@@ -1,14 +1,15 @@
 ## =====================================================================
-## Data figure for the temperatuer application 
+## Data + triangulation figure for the three temperature regimes
 ## Run after fit_models.R.
 ## =====================================================================
 
-library(fmesher)  
+library(fmesher)
 library(fields)   
 library(ggplot2)
 library(viridis)
 library(maps)     
 library(patchwork)
+
 
 DEG_KM <- 111.32
 project <- function(lon, lat, lon0, lat0)
@@ -20,7 +21,11 @@ project <- function(lon, lat, lon0, lat0)
 ref_lonlat <- function(tag) {
   if (tag == "COLORADO") {
     data(COmonthlyMet)
-    ok  <- !is.na(CO.tmean.MAM.climate) & !is.na(CO.elev) & !is.na(CO.loc[,1]) & !is.na(CO.loc[,2])
+    ## use (min + max)/2; fields' CO.tmean is mislabelled (= CO.tmin). The
+    ## plotted temperatures come from the saved fit (e$data$y); this mask
+    ## only sets the projection centre.
+    tmean <- (CO.tmin.MAM.climate + CO.tmax.MAM.climate) / 2
+    ok  <- !is.na(tmean) & !is.na(CO.elev) & !is.na(CO.loc[,1]) & !is.na(CO.loc[,2])
     loc <- CO.loc[ok, , drop = FALSE]
   } else {
     no  <- readRDS(file.path("data", "norway_tavg.rds")); no <- no[no$lat < 65, ]

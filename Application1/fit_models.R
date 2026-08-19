@@ -40,7 +40,10 @@ prep_data <- function(REGION, SEASON = NA) {
   deg_to_km <- 111.32
   if (REGION == "COLORADO") {
     data(COmonthlyMet)
-    y_all <- CO.tmean.MAM.climate
+    ## NOTE: in the fields package CO.tmean.MAM.climate is mislabelled -- it is
+    ## bit-for-bit identical to CO.tmin.MAM.climate.  Use the manually computed
+    ## mean (min + max)/2 as the response.
+    y_all <- (CO.tmin.MAM.climate + CO.tmax.MAM.climate) / 2
     loc_all <- CO.loc
     elev_all <- CO.elev
     ok <- !is.na(y_all) & !is.na(elev_all) & !is.na(loc_all[,1]) & !is.na(loc_all[,2])

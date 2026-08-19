@@ -22,6 +22,9 @@ regs     <- c(COLORADO = "Colorado MAM",
 prep <- function(tag) {
   if (tag == "COLORADO") {
     data(COmonthlyMet)
+    ## fields' CO.tmean.MAM.climate is mislabelled (identical to CO.tmin);
+    ## use the manually computed mean (min + max)/2 -- see fit_models.R.
+    CO.tmean.MAM.climate <- (CO.tmin.MAM.climate + CO.tmax.MAM.climate) / 2
     ok <- !is.na(CO.tmean.MAM.climate) & !is.na(CO.elev) & !is.na(CO.loc[,1]) & !is.na(CO.loc[,2])
     y <- as.numeric(CO.tmean.MAM.climate[ok])
     loc <- CO.loc[ok,,drop=FALSE]
