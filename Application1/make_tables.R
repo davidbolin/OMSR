@@ -1,8 +1,7 @@
-## =====================================================================
-## Build the Section 5 result tables 
-##
-## Run after fit_models.R.  
-## =====================================================================
+# --------------------------------------------------------------------
+# Build the Section 5 result tables
+# Run after fit_models.R.
+# --------------------------------------------------------------------
 
 library(rSPDE)
 library(Matrix)
@@ -33,11 +32,10 @@ delta_ci <- function(fit, mesh, Xn, fem, x_name = "elev") {
              hi        = c(beta_pw, est) + 1.959964*c(se_pw, se))
 }
 
-# Extract parameters (sc1 coerces to a scalar, returning NA when the field is
-# absent -- e.g. the OLS fit has no tau/measurement_error)
-sc1 <- function(x) { 
+# Extract parameters
+sc1 <- function(x) {
   x <- suppressWarnings(as.numeric(x))
-  if (length(x) != 1) NA_real_ else x 
+  if (length(x) != 1) NA_real_ else x
 }
 
 hyper_row <- function(name, fit) {
@@ -57,12 +55,12 @@ source(file.path("..", "common", "standardize.R"))
 regs <- c(COLORADO = "Colorado MAM", NORWAYANNUAL = "Norway annual",
           NORWAYDJF = "Norway DJF")
 
-## Accumulators for the three tables (one entry per region).
-cv_rows     <- list()   
-decomp_rows <- list()   
-hyper_rows  <- list()   
+# Accumulators for the three tables (one entry per region).
+cv_rows     <- list()
+decomp_rows <- list()
+hyper_rows  <- list()
 
-## model display order for the CV table
+# model display order for the CV table
 cv_order <- c("OLS",
               "Additive_est","Additive_a2","Forced_est","Forced_a2",
               "Hybrid_est","Hybrid_a2","TwoScale_a2","Coast_est","Coast_a2",
@@ -89,7 +87,7 @@ for(tag in names(regs)){
   rownames(hyper) <- NULL
   write.csv(hyper, sprintf("%s/hyper_%s.csv", "results/", tag), row.names = FALSE)
 
-  # accumulate rows for the three printed tables 
+  # accumulate rows for the three printed tables
 
   ## Table 1
   cv <- scores
@@ -120,8 +118,8 @@ for(tag in names(regs)){
     LR           = lr,
     row.names = NULL)
 
-  ## hyperparameters + CV RMSE at alpha=2 vs estimated alpha.
-  ## Two-scale has only an alpha=2 fit, so its alpha_est / rmse_est are NA.
+  # hyperparameters + CV RMSE at alpha=2 vs estimated alpha.
+  # Two-scale has only an alpha=2 fit, so its alpha_est / rmse_est are NA.
   rownames(hyper) <- hyper$model
   rownames(cv)    <- cv$Model
   mods    <- c("Additive", "Forced", "Hybrid", "TwoScale", "Coast")
@@ -144,7 +142,7 @@ for(tag in names(regs)){
 }
 
 
-## Assemble and print the three tables as data frames
+# Assemble and print the three tables as data frames
 cv_table     <- do.call(rbind, cv_rows)
 rownames(cv_table)     <- NULL
 decomp_table <- do.call(rbind, decomp_rows)
@@ -152,7 +150,7 @@ rownames(decomp_table) <- NULL
 hyper_table  <- do.call(rbind, hyper_rows)
 rownames(hyper_table)  <- NULL
 
-## round numeric columns for display 
+# round numeric columns for display
 round_num <- function(df, d = 3) {
   num <- vapply(df, is.numeric, logical(1))
   df[num] <- lapply(df[num], round, digits = d)
@@ -173,6 +171,6 @@ print(hyper_disp, row.names = FALSE)
 cat("\n=== Table 2: scale-free decomposition (delta-method SEs) ===\n")
 print(round_num(decomp_table, 3), row.names = FALSE)
 
-## Full per-model cross-validation scores (10-fold).
+# Full per-model cross-validation scores (10-fold).
 cat("\n=== Cross-validation scores (10-fold, per model) ===\n")
 print(round_num(cv_table, 3), row.names = FALSE)

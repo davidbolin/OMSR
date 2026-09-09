@@ -1,10 +1,10 @@
-## ---------------------------------------------------------------------
-## Main file for the simulation study
-##
-## Builds the fixed world (mesh + true operator), then loops over the
-## grid (scenario x n x replicate), fitting all estimators of
-## estimators.R to each replicate.  Replicates are run in parallel.
-## ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Main file for the simulation study
+#
+# Builds the fixed world (mesh + true operator), then loops over the
+# grid (scenario x n x replicate), fitting all estimators of
+# to each replicate.  Replicates are run in parallel.
+# ---------------------------------------------------------------------
 
 source("dgm.R")
 source("estimators.R")
@@ -22,26 +22,26 @@ cat(sprintf("Simulation study: R=%d, n={%s}, scenarios={%s}, sigma_e=%g, cores=%
             R, paste(n_grid, collapse = ","), paste(scenarios, collapse = ","),
             sigma_e, n_cores))
 
-## build the fixed world once 
+# build the fixed world once
 cat("Building mesh and calibrating the true operator ...\n")
 world <- build_world()
 cat(sprintf("  mesh nodes = %d, kappa = %.4f, tau = %.4f (range %.2f, var %.2f)\n",
             world$mesh$n, world$kappa, world$tau, world$range_u, world$var_u))
 
-## one replicate: fit every estimator on a (scenario, n, rep) 
-## The seed depends only on (scenario, n, rep), so the run is reproducible
-## regardless of how the grid is scheduled.
+# one replicate: fit every estimator on a (scenario, n, rep)
+# The seed depends only on (scenario, n, rep), so the run is reproducible
+# regardless of how the grid is scheduled.
 run_one <- function(scenario, n, rep) {
   set.seed(base_seed + 1000 * match(scenario, scenarios) +
            97 * which(n_grid == n) + rep)
   ds  <- simulate_dataset(world, scenario, n, sigma_e = sigma_e)
   res <- fit_all(ds, world)
   res$rep      <- rep
-  res$vartheta <- channel_separation_index(world$K, world$cdiag, ds$Xnodes)  
+  res$vartheta <- channel_separation_index(world$K, world$cdiag, ds$Xnodes)
   res
 }
 
-## run the grid block by block, printing progress 
+# run the grid block by block, printing progress
 n_cells <- length(n_grid) * length(scenarios)
 cat(sprintf("Total fits: %d datasets x 7 estimators, in %d (scenario x n) blocks\n",
             n_cells * R, n_cells))

@@ -1,9 +1,9 @@
-## ---------------------------------------------------------------------
-## The simulation study on the empirical size of the two likelihood-ratio tests
-## used in the applications.
-## ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# The simulation study on the empirical size of the two likelihood-ratio
+# tests used in the applications.
+# ---------------------------------------------------------------------
 
-source("dgm.R")                        
+source("dgm.R")
 library(rSPDE)
 library(parallel)
 
@@ -14,7 +14,7 @@ sigma_e   <- 0.1                                  # observation noise sd
 base_seed <- 2026
 
 
-## the three (test, truth) cells and their printed labels
+# the three (test, truth) cells and their printed labels
 cells <- list(
   list(test = "matching",   scen = "S1", label = "Matching (kappa_mu = kappa)"),
   list(test = "hyb_vs_add", scen = "S2", label = "Hybrid vs. additive"),
@@ -24,15 +24,15 @@ cat(sprintf("LRT size check: R=%d, n={%s}, cores=%d\n",
             R, paste(n_grid, collapse = ","), n_cores))
 
 world  <- build_world()
-model1 <- spde.matern.operators(mesh = world$mesh, alpha = 2)  
+model1 <- spde.matern.operators(mesh = world$mesh, alpha = 2)
 cat(sprintf("  mesh nodes = %d, kappa = %.4f, tau = %.4f\n",
             world$mesh$n, world$kappa, world$tau))
 
-## Safe fit: swallow errors/warnings, return NULL on failure.
+# Hide errors/warnings, return NULL on failure.
 fit_safe <- function(expr) tryCatch(suppressWarnings(force(expr)), error = function(e) NULL)
 
-## One replicate -> the LR statistic 2*Delta-loglik for the given test
-## (NA if any fit fails).  Seed depends only on (test, scen, n, rep_id).
+# One replicate -> the LR statistic 2*Delta-loglik for the given test
+# (NA if any fit fails).  Seed depends only on (test, scen, n, rep_id).
 run_one <- function(test, scen, n, rep_id) {
   set.seed(base_seed + 1e5 * match(test, c("matching", "hyb_vs_add")) +
            1000 * match(scen, names(SCENARIOS)) +
@@ -65,7 +65,7 @@ run_one <- function(test, scen, n, rep_id) {
   max(0, 2 * (hy$loglik - ad$loglik))
 }
 
-## run each (test, truth, n) cell
+# run each (test, truth, n) cell
 crit  <- qchisq(c(0.95, 0.99), df = 1)    # chi^2_1 critical values
 ncell <- length(cells) * length(n_grid)
 t0    <- Sys.time()
@@ -90,7 +90,7 @@ attr(res, "config") <- list(R = R, n_grid = n_grid, sigma_e = sigma_e,
                             base_seed = base_seed)
 saveRDS(res, "lrt_size.rds")
 
-## Print table as in Appendix B
+# Print table
 rate <- function(test, scen, level) {
   vapply(n_grid, function(nn) {
     d <- res[res$test == test & res$scenario == scen & res$n == nn, "lr"]

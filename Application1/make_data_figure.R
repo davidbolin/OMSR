@@ -1,13 +1,13 @@
-## =====================================================================
-## Data + triangulation figure for the three temperature regimes
-## Run after fit_models.R.
-## =====================================================================
+# --------------------------------------------------------------------
+# Data + triangulation figure for the three temperature regimes
+# Run after fit_models.R.
+# --------------------------------------------------------------------
 
 library(fmesher)
-library(fields)   
+library(fields)
 library(ggplot2)
 library(viridis)
-library(maps)     
+library(maps)
 library(patchwork)
 
 
@@ -15,15 +15,12 @@ DEG_KM <- 111.32
 project <- function(lon, lat, lon0, lat0)
   cbind(x = (lon - lon0) * DEG_KM * cos(lat0 * pi/180), y = (lat - lat0) * DEG_KM)
 
-## Reference (lon0, lat0) for each regime, re-derived from the raw station
-## locations exactly as prep_data() in fit_models.R, so the projected outline
-## lines up with the saved km coordinates.
+# Reference (lon0, lat0) for each regime, re-derived from the raw station
+# locations exactly as prep_data() in fit_models.R, so the projected outline
+# lines up with the saved km coordinates.
 ref_lonlat <- function(tag) {
   if (tag == "COLORADO") {
     data(COmonthlyMet)
-    ## use (min + max)/2; fields' CO.tmean is mislabelled (= CO.tmin). The
-    ## plotted temperatures come from the saved fit (e$data$y); this mask
-    ## only sets the projection centre.
     tmean <- (CO.tmin.MAM.climate + CO.tmax.MAM.climate) / 2
     ok  <- !is.na(tmean) & !is.na(CO.elev) & !is.na(CO.loc[,1]) & !is.na(CO.loc[,2])
     loc <- CO.loc[ok, , drop = FALSE]
@@ -38,7 +35,7 @@ ref_lonlat <- function(tag) {
   c(lon0 = mean(loc[,1]), lat0 = mean(loc[,2]))
 }
 
-## outline (NA-separated polygons) projected to the panel's km grid and clipped
+# outline (NA-separated polygons) projected to the panel's km grid and clipped
 outline_df <- function(map_data, ref, xlim, ylim, pad = 200) {
   xy <- project(map_data$x, map_data$y, ref["lon0"], ref["lat0"])
   ok <- xy[,1] >= xlim[1]-pad & xy[,1] <= xlim[2]+pad & xy[,2] >= ylim[1]-pad & xy[,2] <= ylim[2]+pad
@@ -46,7 +43,7 @@ outline_df <- function(map_data, ref, xlim, ylim, pad = 200) {
   data.frame(x = xy[,1], y = xy[,2])
 }
 
-## one panel: mesh + outline + stations coloured by temperature
+# one panel: mesh + outline + stations coloured by temperature
 make_panel <- function(tag, title, map_data, clim) {
   e <- new.env(); load(sprintf("results/fits_%s.RData", tag), envir = e)
   mesh <- fm_as_mesh_2d(e$p$mesh)
@@ -74,7 +71,7 @@ m_co <- map("state", region = c("colorado","wyoming","utah","new mexico",
 m_no <- map("world", region = c("Norway","Sweden","Finland","Denmark",
                                 "UK","Ireland","Russia"), plot = FALSE)
 
-## shared colour scale across the three panels
+# shared colour scale across the three panels
 yr <- range(vapply(c("COLORADO","NORWAYANNUAL","NORWAYDJF"), function(tg) {
   e <- new.env(); load(sprintf("results/fits_%s.RData", tg), envir = e); range(e$data$y)
 }, numeric(2)))

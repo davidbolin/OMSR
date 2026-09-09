@@ -1,8 +1,7 @@
-## =====================================================================
-## Build the Section 5 CV figure
-##
-## Run after fit_models.R and make_tables.R.  
-## =====================================================================
+# --------------------------------------------------------------------
+# Build the Section 5 CV figure
+# Run after fit_models.R and make_tables.R.
+# --------------------------------------------------------------------
 
 library(rSPDE)
 library(Matrix)
@@ -17,14 +16,14 @@ DM_NBLOCK <- 4      # DM block bootstrap: NBLOCK x NBLOCK spatial grid of statio
 DM_NBOOT  <- 2000   # number of block-bootstrap resamples
 DM_SEED   <- 1      # seed for block-bootstrap reproducibility
 
-## per-observation Gaussian predictive scores
+# per-observation Gaussian predictive scores
 obs_scores <- function(mu, v, y) list(logs  = 0.5*log(2*pi*v) + 0.5*(y-mu)^2/v,
                                       sqerr = (y-mu)^2)
-## paired mean loss difference (model - reference) with a spatial block-
-## bootstrap standard error: the station domain is split into a
-## DM_NBLOCK x DM_NBLOCK grid and whole blocks are resampled with replacement,
-## so the SE reflects spatial dependence between neighbouring stations' scores.
-## `blocks` is a list of station-index vectors, one per non-empty block.
+# paired mean loss difference (model - reference) with a spatial block-
+# bootstrap standard error: the station domain is split into a
+# DM_NBLOCK x DM_NBLOCK grid and whole blocks are resampled with replacement,
+# so the SE reflects spatial dependence between neighbouring stations' scores.
+# `blocks` is a list of station-index vectors, one per non-empty block.
 paired_dm <- function(loss_m, loss_ref, blocks, B) {
   d  <- loss_m - loss_ref
   md <- mean(d, na.rm = TRUE)
@@ -61,9 +60,9 @@ compute <- function(tag) {
       pr <- rSPDE::posterior_crossvalidation(object = fits,
               train_test_indices = list(list(train = tr, test = grp)),
               true_CV = FALSE, print = FALSE)
-      for (mi in seq_along(fits)) { 
+      for (mi in seq_along(fits)) {
         MU[i, mi, di] <- pr$mu[[mi]][i]
-        VAR[i, mi, di] <- pr$var[[mi]][i] 
+        VAR[i, mi, di] <- pr$var[[mi]][i]
       }
     }
     cat(sprintf("  %s d=%3d km\n", tag, d))
@@ -86,9 +85,8 @@ for (tag in REGIONS) {
                             rmse     = as.vector(R),
                             logscore = as.vector(L))
 
-  ## paired Diebold-Mariano at d = 0 (leave-one-out), reference = Hybrid, with a
-  ## spatial block-bootstrap SE over a DM_NBLOCK x DM_NBLOCK grid.
-  ## This is the short-range comparison quoted in the text.
+  # paired Diebold-Mariano at d = 0 (leave-one-out), reference = Hybrid, with a
+  # spatial block-bootstrap SE over a DM_NBLOCK x DM_NBLOCK grid.
   i0     <- which(o$D == 0)
   bx     <- cut(o$loc[, 1], DM_NBLOCK, labels = FALSE)
   by     <- cut(o$loc[, 2], DM_NBLOCK, labels = FALSE)
@@ -109,7 +107,7 @@ for (tag in REGIONS) {
 }
 write.csv(do.call(rbind, rows), "results/lgocv_curves.csv", row.names = FALSE)
 
-## LOO paired DM vs Hybrid: supports the "p > 0.3 at short range" statement
+# LOO paired DM vs Hybrid
 cat("\n== Leave-one-out (d=0) paired Diebold-Mariano vs Hybrid ==\n")
 dm_all <- do.call(rbind, dm_rows); rownames(dm_all) <- NULL
 print(within(dm_all, {
@@ -121,7 +119,7 @@ print(within(dm_all, {
 
 regions <- c(COLORADO = "Colorado MAM", NORWAYANNUAL = "Norway annual", NORWAYDJF = "Norway DJF")
 mod_lev <- c("Additive", "AddCoast", "Hybrid", "HybCoast", "OLS", "Forced", "BW", "SpatPlus")
-mod_lab <- c(Additive = "Additive", AddCoast = "Additive + coast", Hybrid = "Hybrid (forcing)",
+mod_lab <- c(Additive = "Additive", AddCoast = "Additive + coast", Hybrid = "Hybrid",
              HybCoast = "Hybrid + coast", OLS = "OLS", Forced = "Forced", BW = "BW",
              SpatPlus = "Spatial+")
 COL <- c(Additive = "grey45", AddCoast = "#377eb8", Hybrid = "#e41a1c", HybCoast = "#4daf4a",

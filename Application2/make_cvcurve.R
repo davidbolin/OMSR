@@ -1,7 +1,7 @@
-## =====================================================================
-## Reproduces Figure 5: leave-distance-out cross-validation.
-## Run after fit_models.R.  Prints the figure (does not save a file).
-## =====================================================================
+# --------------------------------------------------------------------
+# Make the leave-distance-out cross-validation figure.
+# Run after fit_models.R.
+# --------------------------------------------------------------------
 
 library(INLA)
 library(rSPDE)
@@ -67,5 +67,4 @@ panel <- function(score) {
     labs(x = xlab_d, y = ylab_for[[score]])
 }
 
-## single-row figure [log-score | RMSE], printed to the active device
 print((panel("logs") | panel("rmse")) + plot_layout(guides = "collect"))

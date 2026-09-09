@@ -1,19 +1,18 @@
-## ---------------------------------------------------------------------
-## The estimators compared in the simulation study
-##
-## All operator-matched / additive fits (and the Forced-fixed oracle) are
-## rspde_lme fits.  Only the RSR (Reich-Hodges-Zadnik
-## restricted spatial regression) estimator needs extra machinery: its
-## point estimate of the fixed effect equals OLS, but the reported
-## standard error is the RSR model-based variance sigma_e_hat^2 (X'X)^{-1}
-## with the nugget sigma_e_hat^2 estimated by restricted maximum likelihood.  
-## ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# The estimators compared in the simulation study
+#
+# All operator-matched / additive fits (and the Forced-fixed oracle) are
+# rspde_lme fits.  Only the RSR estimator needs extra machinery: its
+# point estimate of the fixed effect equals OLS, but the reported
+# standard error is the RSR model-based variance sigma_e_hat^2 (X'X)^{-1}
+# with the nugget sigma_e_hat^2 estimated by restricted maximum likelihood.
+# ---------------------------------------------------------------------
 
 library(rSPDE)
 library(mgcv)
 
 
-## Safe wrapper: time a fit, swallow errors/warnings, return NULL on fail.
+# Time a fit, swallow errors/warnings, return NULL on fail
 .try_time <- function(expr) {
   t <- system.time(
     val <- tryCatch(suppressWarnings(force(expr)), error = function(e) NULL)
@@ -31,14 +30,14 @@ library(mgcv)
   .row(estimator, param, NA_real_, NA_real_, truth, time, ok = FALSE)
 }
 
-## Helpers to pull a fixed / forcing coefficient out of rspde_lme 
+# Helpers to pull a fixed / forcing coefficient out of rspde_lme
 .fixed_coef <- function(fit, name) {
   est <- tryCatch(unname(fit$coeff$fixed_effects[name]), error = function(e) NA)
   se  <- tryCatch(unname(fit$std_errors$std_fixed[name]),  error = function(e) NA)
   c(est = est, se = se)
 }
 
-.forcing_coef <- function(fit) {            
+.forcing_coef <- function(fit) {
   est <- tryCatch(unname(fit$coeff$random_effects["beta_x1"]),
                   error = function(e) NA)
   se  <- tryCatch(unname(fit$std_errors$std_random["beta_x1"]),
@@ -46,9 +45,9 @@ library(mgcv)
   c(est = est, se = se)
 }
 
-## ============================ estimators =============================
+# ============================ estimators =============================
 
-## 1. Additive-GLS: y ~ X with a Whittle-Matern random effect (alpha = 2).
+# 1. Additive-GLS: y ~ X with a Whittle-Matern random effect (alpha = 2).
 fit_additive <- function(ds, world, models) {
   r <- .try_time(rspde_lme(y ~ X, data = ds$data, model = models$model1,
                            loc = c("x1", "x2"),
@@ -59,8 +58,8 @@ fit_additive <- function(ds, world, models) {
   .row("Additive-GLS", "beta", cc["est"], cc["se"], ds$truth$beta0, r$time)
 }
 
-## 2. BW-empirical: pre-smooth X with a Gaussian kernel of fixed bandwidth equal 
-##    to the field's practical range, then additive GLS.  
+# 2. BW-empirical: pre-smooth X with a Gaussian kernel of fixed bandwidth equal
+#    to the field's practical range, then additive GLS.
 fit_bw <- function(ds, world, models) {
   d <- ds$data
   d$Sx <- gaussian_kernel_smooth(ds$loc, d$X, ds$loc, world$range_u)
@@ -73,8 +72,8 @@ fit_bw <- function(ds, world, models) {
   .row("BW-empirical", "beta", cc["est"], cc["se"], ds$truth$beta0, r$time)
 }
 
-## 3. Spatial+: regress X on a thin-plate spline of location, use the
-##    residual covariate, then additive GLS (Dupont-Wood-Augustin 2022).
+# 3. Spatial+: regress X on a thin-plate spline of location, use the
+#    residual covariate, then additive GLS.
 fit_splus <- function(ds, world, models, k = 30) {
   d <- ds$data
   gx <- tryCatch(mgcv::gam(X ~ s(x1, x2, k = k), data = d, method = "REML"),
@@ -90,9 +89,8 @@ fit_splus <- function(ds, world, models, k = 30) {
   .row("Spatial+", "beta", cc["est"], cc["se"], ds$truth$beta0, r$time)
 }
 
-## 4. RSR: restricted spatial regression (Reich-Hodges-Zadnik).  The
-##    spatial random effect is restricted to the orthogonal complement of
-##    the fixed-effect design, P_perp = I - X(X'X)^{-1}X'. 
+# 4. RSR: restricted spatial regression.  The spatial random effect is
+#    restricted to the orthogonal complement of the fixed-effect design.
 fit_rsr <- function(ds, world, models) {
   tt <- system.time({
     val <- tryCatch({
@@ -102,8 +100,8 @@ fit_rsr <- function(ds, world, models) {
       Pp   <- diag(n) - Xd %*% XtXi %*% t(Xd)            # restriction P_perp
       r    <- as.numeric(y - Xd %*% bhat)                # = P_perp y
       C0 <- world$C0; G <- world$G; A <- ds$A
-      ## profile over kappa; inner profile over (1/tau^2, sigma_e^2) is
-      ## cheap once B = P_perp (A K^{-1} C0 K^{-1} A') P_perp is diagonalised.
+      # profile over kappa; inner profile over (1/tau^2, sigma_e^2) is
+      # cheap once B = P_perp (A K^{-1} C0 K^{-1} A') P_perp is diagonalised.
       prof <- function(lk) {
         K  <- exp(lk)^2 * C0 + G
         Wt <- Matrix::solve(K, Matrix::t(A))             # K^{-1} A'  (m x n)
@@ -127,7 +125,7 @@ fit_rsr <- function(ds, world, models) {
   .row("RSR", "beta", val$est, val$se, ds$truth$beta0, as.numeric(tt))
 }
 
-## 5. Forced-fixed: forced model with the TRUE operator (oracle).  
+# 5. Forced-fixed: forced model with the true operator.
 fit_forced_fixed <- function(ds, world, models) {
   r <- .try_time(rspde_lme(y ~ 1, data = ds$data, model = models$model2,
                            loc = c("x1", "x2"),
@@ -139,7 +137,7 @@ fit_forced_fixed <- function(ds, world, models) {
   .row("Forced-fixed", "beta_fc", cc["est"], cc["se"], ds$truth$beta0, r$time)
 }
 
-## 6. Forced: forced model with the operator (kappa, tau) and beta_fc estimated
+# 6. Forced: forced model with the operator (kappa, tau) and beta_fc estimated
 fit_forced <- function(ds, world, models) {
   r <- .try_time(rspde_lme(y ~ 1, data = ds$data, model = models$model2,
                            loc = c("x1", "x2"),
@@ -149,7 +147,7 @@ fit_forced <- function(ds, world, models) {
   .row("Forced", "beta_fc", cc["est"], cc["se"], ds$truth$beta0, r$time)
 }
 
-## 7. Hybrid: covariate enters both pointwise and as forcing 
+# 7. Hybrid: covariate enters both pointwise and as forcing
 fit_hybrid <- function(ds, world, models) {
   r <- .try_time(rspde_lme(y ~ X, data = ds$data, model = models$model2,
                            loc = c("x1", "x2"),
@@ -167,10 +165,8 @@ fit_hybrid <- function(ds, world, models) {
     .row("Hybrid (fc)", "beta_fc", fc["est"], fc["se"], ds$truth$beta_fc, r$time))
 }
 
-## ---------------------------------------------------------------------
-## fit_all(): build the data-dependent models once and run every
-## estimator on a single dataset.  Returns a tidy data.frame.
-## ---------------------------------------------------------------------
+
+# Build the data-dependent models once and run every estimator on a single dataset.
 fit_all <- function(ds, world) {
   models <- list(
     model1 = spde.matern.operators(mesh = world$mesh, alpha = 2),

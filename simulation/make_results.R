@@ -1,8 +1,9 @@
-## ---------------------------------------------------------------------
-## Aggregate the raw replicates into summary metrics, and produce figure
-## ---------------------------------------------------------------------
-source("dgm.R")                        # SCENARIOS labels / ordering
-suppressMessages({ library(ggplot2); library(ggh4x) })
+# ---------------------------------------------------------------------
+# Aggregate the raw replicates into summary metrics, and produce figure
+# ---------------------------------------------------------------------
+source("dgm.R")
+library(ggplot2)
+library(ggh4x)
 
 results <- readRDS("sim_results.rds")
 
@@ -12,9 +13,9 @@ EST_ORDER  <- c("Additive-GLS", "BW-empirical", "Spatial+", "RSR",
                 "Forced-fixed", "Forced", "Hybrid (pw)", "Hybrid (fc)")
 SCEN_ORDER <- names(SCENARIOS)
 
-## ---- aggregate the replicate-level results into summary metrics ------
-## Mean-based bias/RMSE/coverage/width (as reported in the paper) plus the
-## robust median bias; `fail` = share of non-converged or diverged fits.
+# Aggregate the replicate-level results into summary metrics. Mean-based
+# bias/RMSE/coverage/width plus the robust median bias; `fail` = share of
+# non-converged or diverged fits.
 aggregate_metrics <- function(df) {
   keys <- with(df, paste(scenario, n, estimator, param, sep = "\r"))
   do.call(rbind, lapply(split(df, keys), function(d_all) {
@@ -41,8 +42,7 @@ metrics$estimator <- factor(metrics$estimator, levels = EST_ORDER)
 metrics$scenario  <- factor(metrics$scenario,  levels = SCEN_ORDER)
 metrics <- metrics[order(metrics$n, metrics$scenario, metrics$estimator), ]
 
-## ---- channel-separation index vartheta(X) per scenario (quoted in the
-## appendix as 0.46, 0.51, 0.36, 0.46 for S1-S4) -----------------------
+# Channel-separation index vartheta(X) per scenario
 if ("vartheta" %in% names(results)) {
   vth <- aggregate(vartheta ~ scenario, data = results, FUN = mean)
   vth <- vth[match(SCEN_ORDER, vth$scenario), ]
@@ -52,7 +52,7 @@ if ("vartheta" %in% names(results)) {
   cat("\n")
 }
 
-## ---- summary metrics per sample size (the numbers behind the figure) -
+# Summary metrics per sample size
 for (nn in sort(unique(metrics$n))) {
   cat(sprintf("================ n = %d ================\n", nn))
   sub <- metrics[metrics$n == nn, ]
@@ -69,17 +69,14 @@ for (nn in sort(unique(metrics$n))) {
   cat("\n")
 }
 
-## ---- the appendix curve figure (Figure fig:sim-curves) --------------
-## bias / RMSE / coverage vs n, metric x scenario facets, one line per
-## estimator; competitors dashed, the operator-matched estimators solid.
+# Make the appendix curve figure
 SCEN_LAB <- c(S1 = "S1: forced truth", S2 = "S2: rough X, additive",
               S3 = "S3: smooth X, additive", S4 = "S4: mismatched op.")
-## Okabe-Ito colour-blind-safe palette (8 estimators).
 PAL <- c("Additive-GLS" = "#000000", "BW-empirical" = "#E69F00",
          "Spatial+" = "#56B4E9", "RSR" = "#009E73",
          "Forced-fixed" = "#F0E442", "Forced" = "#0072B2",
          "Hybrid (pw)" = "#D55E00", "Hybrid (fc)" = "#CC79A7")
-COMPET     <- c("Additive-GLS", "BW-empirical", "Spatial+", "RSR")   # drawn dashed
+COMPET     <- c("Additive-GLS", "BW-empirical", "Spatial+", "RSR")
 MET_LEVELS <- c("Bias", "RMSE", "Coverage")
 
 base <- metrics[, c("scenario", "n", "estimator")]
@@ -93,7 +90,6 @@ long$metric    <- factor(long$metric, levels = MET_LEVELS)
 long$scenario  <- factor(long$scenario, levels = names(SCEN_LAB))
 long$lt <- ifelse(as.character(long$estimator) %in% COMPET, "competitor", "proposed")
 
-## per-row reference lines: bias -> 0, coverage -> 0.95
 refs <- data.frame(metric = factor(c("Bias", "Coverage"), levels = levels(long$metric)),
                    y = c(0, 0.95))
 
@@ -101,7 +97,6 @@ fig <- ggplot(long, aes(n, value, colour = estimator, linetype = lt)) +
   geom_hline(data = refs, aes(yintercept = y), colour = "grey60",
              linewidth = 0.3, linetype = "dotted") +
   geom_line(linewidth = 0.6) + geom_point(size = 1.1) +
-  ## metric rows share nothing (independent y per panel), scenario columns on top
   facet_grid2(metric ~ scenario, scales = "free_y", independent = "y", switch = "y") +
   scale_x_log10(breaks = sort(unique(long$n))) +
   scale_colour_manual(values = PAL, name = NULL) +

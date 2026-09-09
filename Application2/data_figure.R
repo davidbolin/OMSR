@@ -1,7 +1,6 @@
-## =====================================================================
-## Data figure for the Flanders NO2 application 
-## Reads the pre-computed layers in data/no2_figure_data.rds 
-## =====================================================================
+# ---------------------------------------------------------------------
+# Data figure for the NO2 application
+# ---------------------------------------------------------------------
 library(ggplot2)
 library(viridis)
 library(patchwork)
@@ -37,8 +36,8 @@ p_pop <- base(ggplot() +
                      option="mako", na.value="white", guide=cbar(2)),
   "Residential population")
 
-## merged emission sources: traffic as a red road network (lines),
-## industry as cividis point sources -- distinct by geometry and hue.
+# merged emission sources: traffic as a red road network (lines),
+# industry as cividis point sources -- distinct by geometry and hue.
 p_src <- base(ggplot() +
   geom_path(data=rd, aes(x,y,group=grp,colour=log10(intensity)), linewidth=0.28) +
   scale_colour_gradient(name=expression(log[10]~veh/day),
@@ -50,7 +49,7 @@ p_src <- base(ggplot() +
                      labels=c("0.01","0.1","1","10"), guide=cbar(4)),
   "Emission sources (traffic + industry)")
 
-## shared y axis: keep it only on the leftmost panel
+# shared y axis: keep it only on the leftmost panel
 noy <- theme(axis.title.y=element_blank(), axis.text.y=element_blank(),
              axis.ticks.y=element_blank())
 p_pop <- p_pop + noy
