@@ -7,7 +7,7 @@ To reproduce
 3. Run `make_cvcurve.R` to reproduce the cross-validation figures.
 4. Run `data_figure.R` to make the data figure.
 
-Requires `rSPDE` (> 2.5.2) and `R-INLA`.
+Requires `rSPDE` (>= 2.6.0) and `R-INLA`.
 
 ## Data
 
