@@ -186,6 +186,7 @@ run_region <- function(REGION, SEASON = NA) {
                                          seed = SEED_CV, parallel_folds = TRUE,
                                          print = FALSE)
 
+  dir.create("results", showWarnings = FALSE)
   save(p, fits, pr, data, addcoast, file = sprintf("results/fits_%s.RData", tag))
 
 }

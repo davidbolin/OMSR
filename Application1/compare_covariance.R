@@ -43,7 +43,7 @@ prep <- function(tag) {
     y <- yv[ok]
     loc <- cbind(no$lon[ok], no$lat[ok])
     elev <- no$elev[ok]/1000
-    rs  <- lapply(c("NOR","SWE","DNK"), function(cc) elevation_30s(country=cc, path="data/dem", mask=FALSE))
+    rs  <- lapply(c("NOR","SWE","DNK"), function(cc) elevation_30s(country=cc, path="data", mask=FALSE))
     dem <- do.call(terra::mosaic, c(rs, list(fun = "mean")))
     bb  <- terra::ext(min(loc[,1])-1, max(loc[,1])+1, min(loc[,2])-1, max(loc[,2])+1)
     demc <- terra::crop(dem, bb)
