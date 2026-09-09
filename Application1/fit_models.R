@@ -55,7 +55,7 @@ prep_data <- function(REGION, SEASON = NA) {
     bnd  <- fm_nonconvex_hull(loc_km, convex = 60, concave = 80)
     mesh <- fm_mesh_2d(loc = loc_km, boundary = bnd, max.edge = c(55,160),
                        cutoff = 25, offset = c(40,180))
-    mesh_lonlat <- cbind(lon = mesh$loc[,1]/(deg_to_km*cos(lat0*pi/180)) + mean(loc_all[,1]),
+    mesh_lonlat <- cbind(lon = mesh$loc[,1]/(deg_to_km*cos(lat0*pi/180)) + mean(loc[,1]),
                          lat = mesh$loc[,2]/deg_to_km + lat0)
     elev_nodes <- interp.surface(CO.elevGrid, mesh_lonlat)
     if (any(is.na(elev_nodes))) for (i in which(is.na(elev_nodes))) {

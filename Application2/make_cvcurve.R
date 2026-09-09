@@ -11,9 +11,11 @@ library(RANN)
 
 load("results/be_no2_fits.RData")
 
-Kmax <- 600L
+Kmax <- 1200L
 nn <- RANN::nn2(loc_km, k = min(Kmax, n))   # self is the 1st neighbour (dist 0)
 D_GRID <- c(0,0.25,0.5,1,2,3,5)
+stopifnot("buffer groups truncated by Kmax -- raise it" =
+          max(rowSums(nn$nn.dists <= max(D_GRID))) < ncol(nn$nn.idx))
 scoreset <- function(f, grp){
   g <- inla.group.cv(f, groups = grp)
   if (is.null(g$cv)) return(c(rmse=NA, logs=NA))

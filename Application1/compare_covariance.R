@@ -150,23 +150,30 @@ diagnostics <- function(P, kappa, diag_km = 16) {
   c(g_X = gX, vartheta = 1 - q12^2/(q11*q22))
 }
 
-# 10-fold CV RMSE at the fitted (kappa, phi, sigU2)
-cv_rmse <- function(P, E, kappa, phi, sigU2) {
+# 10-fold CV RMSE
+cv_rmse <- function(P, E, par0) {
   set.seed(26)
   n <- P$n
   fold <- sample(rep(1:10, length.out = n))
-  z <- E$Selev(kappa)
-  M <- cbind(1, P$elev, z)
-  S <- matcor(E$Dss, kappa)*sigU2; diag(S) <- diag(S) + phi*sigU2
   pred <- numeric(n)
   for (k in 1:10) {
     te <- which(fold==k)
     tr <- setdiff(1:n, te)
-    Lt <- chol(S[tr,tr])
-    bi <- solve(crossprod(M[tr,], backsolve(Lt, forwardsolve(t(Lt), M[tr,]))),
-                crossprod(M[tr,], backsolve(Lt, forwardsolve(t(Lt), P$y[tr]))))
-    rt <- P$y[tr] - M[tr,] %*% bi
-    pred[te] <- M[te,] %*% bi + S[te,tr] %*% backsolve(Lt, forwardsolve(t(Lt), rt))
+    # re-fit the operator on the training stations only
+    P_tr <- list(y = P$y[tr], elev = P$elev[tr], xy = P$xy[tr,,drop=FALSE],
+                 ux = P$ux, uy = P$uy, gz = P$gz, wq = P$wq, n = length(tr))
+    E_tr <- make_obj(P_tr)
+    o_k  <- optim(par0, E_tr$obj, method = "Nelder-Mead",
+                  control = list(reltol = 1e-10, maxit = 1200))
+    kap_k <- exp(o_k$par[1]); phi_k <- exp(o_k$par[2])
+    # predict the held-out stations at the fold's own parameters
+    Mk <- cbind(1, P$elev, E$Selev(kap_k))
+    Sk <- matcor(E$Dss, kap_k); diag(Sk) <- diag(Sk) + phi_k
+    Lt <- chol(Sk[tr,tr])
+    bi <- solve(crossprod(Mk[tr,], backsolve(Lt, forwardsolve(t(Lt), Mk[tr,]))),
+                crossprod(Mk[tr,], backsolve(Lt, forwardsolve(t(Lt), P$y[tr]))))
+    rt <- P$y[tr] - Mk[tr,] %*% bi
+    pred[te] <- Mk[te,] %*% bi + Sk[te,tr] %*% backsolve(Lt, forwardsolve(t(Lt), rt))
   }
   sqrt(mean((P$y - pred)^2))
 }
@@ -189,7 +196,7 @@ fit_region <- function(tag) {
                               g_X = dg["g_X"], vartheta = dg["vartheta"],
                               beta_eff = (f$beta[3]/kap^2)*dg["g_X"],
                               sigma_e = sqrt(phi*f$sigU2),
-                              cv_rmse = cv_rmse(P, E, kap, phi, f$sigU2)))
+                              cv_rmse = cv_rmse(P, E, o$par)))
 
   ots <- optim(c(o$par, log(1/300)), function(pp) E$obj(pp[1:2], kap_mu = exp(pp[3])),
                method = "Nelder-Mead", control = list(reltol = 1e-10, maxit = 2000))

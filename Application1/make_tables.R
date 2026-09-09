@@ -60,6 +60,7 @@ cv_rows     <- list()
 decomp_rows <- list()
 hyper_rows  <- list()
 
+match_rows  <- list()
 # model display order for the CV table
 cv_order <- c("OLS",
               "Additive_est","Additive_a2","Forced_est","Forced_a2",
@@ -86,6 +87,27 @@ for(tag in names(regs)){
   hyper <- do.call(rbind, Map(hyper_row, names(fits), fits))
   rownames(hyper) <- NULL
   write.csv(hyper, sprintf("%s/hyper_%s.csv", "results/", tag), row.names = FALSE)
+
+  # Operator-matching LRT: the two-scale model (free kappa_mu) against the
+  # hybrid it nests (kappa_mu = kappa), referred to chi^2_1.
+  if (all(c("TwoScale_a2", "Hybrid_a2") %in% names(fits))) {
+    ts <- fits$TwoScale_a2
+    lr_match <- 2 * (ts$loglik - fits$Hybrid_a2$loglik)
+    if (lr_match < 0)
+      warning(sprintf("%s: two-scale log-likelihood is %.3f below the nested hybrid; refit before using this test",
+                      tag, -lr_match))
+    match_rows[[tag]] <- data.frame(
+      region               = regs[[tag]],
+      kappa_inv_field_km   = 1 / sc1(ts$coeff$random_effects[["kappa"]]),
+      kappa_mu_inv_km      = 1 / sc1(ts$coeff$random_effects[["kappa_mu"]]),
+      kappa_inv_matched_km = 1 / sc1(fits$Hybrid_a2$coeff$random_effects[["kappa"]]),
+      lr_2dLL              = lr_match,
+      p_chisq1             = if (lr_match > 0) 1 - pchisq(lr_match, 1) else NA_real_,
+      row.names = NULL)
+    write.csv(match_rows[[tag]], sprintf("%s/matching_%s.csv", "results/", tag),
+              row.names = FALSE)
+  }
+
 
   # accumulate rows for the three printed tables
 
@@ -167,6 +189,19 @@ hyper_disp <- transform(hyper_table,
 cat("\n=== Table 1: fitted hyperparameters and effect of estimating alpha ===\n")
 cat("(rmse_a2, rmse_est = 10-fold CV RMSE at alpha=2 and at the estimated alpha)\n")
 print(hyper_disp, row.names = FALSE)
+
+
+match_table <- do.call(rbind, match_rows)
+if (!is.null(match_table)) {
+  rownames(match_table) <- NULL
+  cat("\n=== Operator-matching LRT: two-scale vs. matched hybrid (chi^2_1) ===\n")
+  print(transform(match_table,
+                  kappa_inv_field_km   = round(kappa_inv_field_km, 0),
+                  kappa_mu_inv_km      = round(kappa_mu_inv_km, 0),
+                  kappa_inv_matched_km = round(kappa_inv_matched_km, 0),
+                  lr_2dLL              = round(lr_2dLL, 2),
+                  p_chisq1             = round(p_chisq1, 3)), row.names = FALSE)
+}
 
 cat("\n=== Table 2: scale-free decomposition (delta-method SEs) ===\n")
 print(round_num(decomp_table, 3), row.names = FALSE)
